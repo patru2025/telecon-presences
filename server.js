@@ -7,7 +7,6 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 const MOT_DE_PASSE_ADMIN = process.env.ADMIN_PASSWORD || 'telecon2024';
 
-// Sur Glitch, le dossier .data est persistant entre les redémarrages
 const DOSSIER_DATA = '.data';
 const FICHIER_DATA = path.join(DOSSIER_DATA, 'presences.json');
 
@@ -16,12 +15,12 @@ if (!fs.existsSync(FICHIER_DATA)) fs.writeFileSync(FICHIER_DATA, '[]');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('public'));
+app.use(express.static('Public'));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'telecon-secret-clé-2024',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 8 * 60 * 60 * 1000 } // session de 8 heures
+  cookie: { maxAge: 8 * 60 * 60 * 1000 }
 }));
 
 function lire() {
@@ -33,10 +32,8 @@ function sauver(data) {
   fs.writeFileSync(FICHIER_DATA, JSON.stringify(data, null, 2));
 }
 
-// ── Routes publiques (employés) ──────────────────────────────────────────
-
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'formulaire.html'));
+  res.sendFile(path.join(__dirname, 'Public', 'formulaire.html'));
 });
 
 app.post('/api/presence', (req, res) => {
@@ -58,13 +55,11 @@ app.post('/api/presence', (req, res) => {
   res.json({ ok: true });
 });
 
-// ── Routes admin (protégées) ─────────────────────────────────────────────
-
 app.get('/admin', (req, res) => {
   if (req.session.admin) {
-    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'Opinions', 'admin.html'));
   } else {
-    res.sendFile(path.join(__dirname, 'views', 'login.html'));
+    res.sendFile(path.join(__dirname, 'Opinions', 'login.html'));
   }
 });
 
@@ -82,13 +77,11 @@ app.get('/admin/logout', (req, res) => {
   res.redirect('/admin');
 });
 
-// API : liste des présences (admin seulement)
 app.get('/api/presences', (req, res) => {
   if (!req.session.admin) return res.status(401).json({ erreur: 'Non autorisé.' });
   res.json(lire());
 });
 
-// API : supprimer une présence (admin seulement)
 app.delete('/api/presence/:id', (req, res) => {
   if (!req.session.admin) return res.status(401).json({ erreur: 'Non autorisé.' });
   sauver(lire().filter(p => p.id !== parseInt(req.params.id)));
