@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tableau de bord — TELECON</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bleu:   #1a56db;
+      --bleu-f: #1042a8;
+      --vert:   #057a55;
+      --rouge:  #c81e1e;
+      --gris:   #6b7280;
+      --bg:     #f3f4f6;
+      --card:   #ffffff;
+      --border: #e5e7eb;
+      --text:   #111827;
+      --text2:  #4b5563;
+    }
+
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── Header ── */
+    header {
+      background: var(--bleu);
+      color: #fff;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.18);
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; flex: 1; }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+    .btn-logout {
+      background: rgba(255,255,255,.15);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-size: .82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .18s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,.25); }
+    .lien-formulaire {
+      background: #fff;
+      color: var(--bleu);
+      border: none;
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-size: .82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .18s;
+    }
+    .lien-formulaire:hover { background: #e8eeff; }
+
+    /* ── Layout ── */
+    main { max-width: 1200px; margin: 24px auto; padding: 0 16px; }
+
+    /* ── Stats globales ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+    .stat-card .label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gris); margin-bottom: 6px; }
+    .stat-card .valeur { font-size: 1.8rem; font-weight: 800; color: var(--bleu); }
+    .stat-card .sous { font-size: .8rem; color: var(--gris); margin-top: 3px; }
+
+    /* ── Carte principale ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 22px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+
+    /* ── Onglets ── */
+    .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 18px; }
+    .tab {
+      padding: 9px 20px;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--gris);
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      background: none;
+      transition: color .15s, border-color .15s;
+    }
+    .tab.active { color: var(--bleu); border-bottom-color: var(--bleu); }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .toolbar label { font-size: .82rem; font-weight: 600; color: var(--text2); }
+    .toolbar input, .toolbar select {
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: .85rem;
+      background: #f9fafb;
+    }
+    .toolbar input:focus, .toolbar select:focus { outline: none; border-color: var(--bleu); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 7px;
+      font-size: .85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-success { background: var(--vert); color: #fff; }
+    .btn-success:hover { background: #046443; }
+    .btn-outline { background: #fff; color: var(--bleu); border: 1.5px solid var(--bleu); }
+    .btn-outline:hover { background: #eef3ff; }
+    .btn-danger { background: var(--rouge); color: #fff; font-size: .75rem; padding: 4px 9px; border-radius: 6px; }
+    .btn-danger:hover { background: #a51818; }
+
+    /* ── Pills stats ── */
+    .pills { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .pill {
+      background: #eef3ff;
+      color: var(--bleu-f);
+      border-radius: 20px;
+      padding: 4px 13px;
+      font-size: .8rem;
+      font-weight: 700;
+    }
+    .pill span { font-weight: 400; }
+
+    /* ── Tableau ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+    thead th {
+      background: #f9fafb;
+      padding: 9px 12px;
+      text-align: left;
+      font-size: .75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--gris);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    tbody tr:hover { background: #f9fafb; }
+    tbody td { padding: 10px 12px; }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .badge-blue  { background: #dbeafe; color: #1e40af; }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-gray  { background: #f3f4f6; color: #4b5563; }
+
+    .empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--gris);
+      font-size: .9rem;
+    }
+    .empty svg { display: block; margin: 0 auto 12px; opacity: .3; }
+
+    /* ── Lien à copier ── */
+    .lien-panel {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .lien-panel span { font-size: .82rem; color: #1e40af; font-weight: 600; flex: 1; min-width: 200px; word-break: break-all; }
+    .lien-panel p { font-size: .78rem; color: #3b82f6; width: 100%; margin-top: 4px; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: #111827;
+      color: #fff;
+      padding: 11px 18px;
+      border-radius: 8px;
+      font-size: .88rem;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round">
+    <rect x="3" y="4" width="18" height="18" rx="2"/>
+    <line x1="16" y1="2" x2="16" y2="6"/>
+    <line x1="8" y1="2" x2="8" y2="6"/>
+    <line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+  <h1>Tableau de bord — Suivi des présences</h1>
+  <div class="header-actions">
+    <button class="lien-formulaire" onclick="copierLien()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Copier le lien employé
+    </button>
+    <a class="btn-logout" href="/admin/logout">Déconnexion</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats globales -->
+  <div class="stats-grid" id="statsGlobales">
+    <div class="stat-card">
+      <div class="label">Total présences</div>
+      <div class="valeur" id="sgTotal">—</div>
+      <div class="sous">toutes périodes</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Employés distincts</div>
+      <div class="valeur" id="sgEmployes">—</div>
+      <div class="sous">enregistrés</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Présences aujourd'hui</div>
+      <div class="valeur" id="sgAujourdhui">—</div>
+      <div class="sous" id="sgDateAuj"></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Heures ce mois</div>
+      <div class="valeur" id="sgMois">—</div>
+      <div class="sous" id="sgNomMois"></div>
+    </div>
+  </div>
+
+  <!-- Tableau principal -->
+  <div class="card">
+
+    <!-- Onglets -->
+    <div class="tabs">
+      <button class="tab active" onclick="changerVue('jour', this)">Journalier</button>
+      <button class="tab" onclick="changerVue('semaine', this)">Hebdomadaire</button>
+      <button class="tab" onclick="changerVue('mois', this)">Mensuel</button>
+      <button class="tab" onclick="changerVue('tous', this)">Tout afficher</button>
+    </div>
+
+    <!-- Barre d'outils -->
+    <div class="toolbar">
+      <label id="labelFiltre">Date :</label>
+      <input type="date" id="filtreDate" onchange="afficherVue()" />
+      <select id="filtreEmploye" onchange="afficherVue()" style="display:none">
+        <option value="">Tous les employés</option>
+      </select>
+      <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="exporterExcel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Exporter vue
+        </button>
+        <button class="btn btn-outline" onclick="exporterTout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Tout exporter
+        </button>
+      </div>
+    </div>
+
+    <!-- Pills résumé -->
+    <div class="pills" id="pills"></div>
+
+    <!-- Tableau -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Employé</th>
+            <th>Date</th>
+            <th>Arrivée</th>
+            <th>Départ</th>
+            <th>Durée</th>
+            <th>Projet</th>
+            <th>Soumis le</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="empty" style="display:none">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+          <rect x="3" y="4" width="18" height="18" rx="2"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        Aucune présence pour cette période.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+let presences = [];
+let vueActive = 'jour';
+
+// ── Chargement initial ───────────────────────────────────────────────────
+async function charger() {
+  try {
+    const r = await fetch('/api/presences');
+    if (r.status === 401) { location.href = '/admin'; return; }
+    presences = await r.json();
+    majDatalist();
+    majStatsGlobales();
+    afficherVue();
+  } catch {
+    toast('❌ Erreur de connexion au serveur.');
+  }
+}
+
+// ── Datalist employés ────────────────────────────────────────────────────
+function majDatalist() {
+  const noms = [...new Set(presences.map(p => p.employe))].sort();
+  const sel = document.getElementById('filtreEmploye');
+  const valActuelle = sel.value;
+  sel.innerHTML = '<option value="">Tous les employés</option>' +
+    noms.map(n => `<option value="${n}"${n===valActuelle?' selected':''}>${n}</option>`).join('');
+}
+
+// ── Stats globales ───────────────────────────────────────────────────────
+function majStatsGlobales() {
+  const auj = aujourdhui();
+  const moisCourant = auj.slice(0, 7);
+  const presAuj  = presences.filter(p => p.date === auj);
+  const presMois = presences.filter(p => p.date.startsWith(moisCourant));
+  const minMois  = presMois.reduce((s, p) => s + dureeMin(p.arrivee, p.depart), 0);
+  const [y, m] = moisCourant.split('-');
+  const nomMois = new Date(y, m-1).toLocaleString('fr-CA', { month: 'long', year: 'numeric' });
+
+  document.getElementById('sgTotal').textContent     = presences.length;
+  document.getElementById('sgEmployes').textContent  = new Set(presences.map(p => p.employe)).size;
+  document.getElementById('sgAujourdhui').textContent = presAuj.length;
+  document.getElementById('sgDateAuj').textContent   = formatDate(auj);
+  document.getElementById('sgMois').textContent      = formatDuree(minMois);
+  document.getElementById('sgNomMois').textContent   = nomMois;
+}
+
+// ── Vues ─────────────────────────────────────────────────────────────────
+function changerVue(vue, btn) {
+  vueActive = vue;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  const filtre = document.getElementById('filtreDate');
+  const label  = document.getElementById('labelFiltre');
+  const selEmp = document.getElementById('filtreEmploye');
+
+  if (vue === 'tous') {
+    filtre.style.display = 'none';
+    label.textContent    = '';
+    selEmp.style.display = '';
+  } else {
+    selEmp.style.display = '';
+    filtre.style.display = '';
+    if (vue === 'jour') {
+      filtre.type = 'date'; label.textContent = 'Date :';
+      if (!filtre.value) filtre.value = aujourdhui();
+    } else if (vue === 'semaine') {
+      filtre.type = 'week'; label.textContent = 'Semaine :';
+      filtre.value = semaineISO(new Date());
+    } else if (vue === 'mois') {
+      filtre.type = 'month'; label.textContent = 'Mois :';
+      filtre.value = aujourdhui().slice(0, 7);
+    }
+  }
+  afficherVue();
+}
+
+function filtrer() {
+  const val    = document.getElementById('filtreDate').value;
+  const empFil = document.getElementById('filtreEmploye').value;
+  let res = [...presences];
+
+  if (vueActive === 'jour')    res = res.filter(p => p.date === val);
+  if (vueActive === 'semaine') res = res.filter(p => semaineISO(new Date(p.date + 'T00:00:00')) === val);
+  if (vueActive === 'mois')    res = res.filter(p => p.date.startsWith(val));
+  if (empFil) res = res.filter(p => p.employe === empFil);
+  return res.sort((a, b) => (a.date + a.arrivee).localeCompare(b.date + b.arrivee));
+}
+
+function afficherVue() {
+  const data  = filtrer();
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty');
+
+  // Pills
+  const totalMin  = data.reduce((s, p) => s + dureeMin(p.arrivee, p.depart), 0);
+  const nbEmployes = new Set(data.map(p => p.employe)).size;
+  document.getElementById('pills').innerHTML = `
+    <div class="pill"><span>Présences : </span>${data.length}</div>
+    <div class="pill"><span>Employés : </span>${nbEmployes}</div>
+    <div class="pill"><span>Heures totales : </span>${formatDuree(totalMin)}</div>
+  `;
+
+  if (!data.length) { tbody.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = data.map(p => {
+    const min = dureeMin(p.arrivee, p.depart);
+    const soumis = p.soumisLe ? new Date(p.soumisLe).toLocaleString('fr-CA', { dateStyle:'short', timeStyle:'short' }) : '—';
+    return `<tr>
+      <td><strong>${esc(p.employe)}</strong></td>
+      <td>${formatDate(p.date)}</td>
+      <td><span class="badge badge-blue">${p.arrivee || '—'}</span></td>
+      <td>${p.depart ? `<span class="badge badge-green">${p.depart}</span>` : `<span class="badge badge-gray">—</span>`}</td>
+      <td>${min > 0 ? formatDuree(min) : '—'}</td>
+      <td>${p.projet ? `<span class="badge badge-gray">${esc(p.projet)}</span>` : '—'}</td>
+      <td style="font-size:.75rem;color:#9ca3af">${soumis}</td>
+      <td><button class="btn btn-danger" onclick="supprimer(${p.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Supprimer ────────────────────────────────────────────────────────────
+async function supprimer(id) {
+  if (!confirm('Supprimer cette entrée ?')) return;
+  const r = await fetch(`/api/presence/${id}`, { method: 'DELETE' });
+  if (r.ok) {
+    presences = presences.filter(p => p.id !== id);
+    majDatalist();
+    majStatsGlobales();
+    afficherVue();
+    toast('🗑️ Entrée supprimée.');
+  }
+}
+
+// ── Copier le lien employé ───────────────────────────────────────────────
+function copierLien() {
+  const lien = window.location.origin + '/';
+  navigator.clipboard.writeText(lien).then(() => {
+    toast('📋 Lien copié ! Envoyez-le par texto à votre employé.');
+  }).catch(() => {
+    prompt('Copiez ce lien et envoyez-le par texto :', lien);
+  });
+}
+
+// ── Export Excel ─────────────────────────────────────────────────────────
+function construireData(liste) {
+  const en = ['Employé','Date','Arrivée','Départ','Durée (min)','Durée','Projet','Soumis le'];
+  const lg = liste.map(p => {
+    const min = dureeMin(p.arrivee, p.depart);
+    const soumis = p.soumisLe ? new Date(p.soumisLe).toLocaleString('fr-CA') : '';
+    return [p.employe, formatDate(p.date), p.arrivee||'', p.depart||'', min||'', formatDuree(min), p.projet||'', soumis];
+  });
+  return [en, ...lg];
+}
+
+function resumeEmployes(liste) {
+  const map = {};
+  liste.forEach(p => {
+    if (!map[p.employe]) map[p.employe] = { jours: new Set(), min: 0 };
+    map[p.employe].jours.add(p.date);
+    map[p.employe].min += dureeMin(p.arrivee, p.depart);
+  });
+  const en = ['Employé','Jours de présence','Total heures','Total minutes'];
+  const lg = Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0]))
+    .map(([nom,d]) => [nom, d.jours.size, formatDuree(d.min), d.min]);
+  return [en, ...lg];
+}
+
+function creerFeuille(data) {
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [22,13,10,10,13,10,20,18].map(w => ({ wch: w }));
+  return ws;
+}
+
+function exporterExcel() {
+  const data = filtrer();
+  if (!data.length) { toast('⚠️ Aucune donnée pour cette période.'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, creerFeuille(construireData(data)), 'Présences');
+  XLSX.utils.book_append_sheet(wb, creerFeuille(resumeEmployes(data)), 'Résumé');
+  const val = document.getElementById('filtreDate').value || aujourdhui();
+  XLSX.writeFile(wb, `Presences_${vueActive}_${val}.xlsx`);
+  toast('📥 Fichier Excel exporté !');
+}
+
+function exporterTout() {
+  if (!presences.length) { toast('⚠️ Aucune donnée enregistrée.'); return; }
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, creerFeuille(construireData(presences)), 'Toutes les présences');
+  XLSX.utils.book_append_sheet(wb, creerFeuille(resumeEmployes(presences)), 'Résumé global');
+
+  const mois = [...new Set(presences.map(p => p.date.slice(0,7)))].sort();
+  mois.forEach(m => {
+    const sous = presences.filter(p => p.date.startsWith(m));
+    const [y, mo] = m.split('-');
+    const nom = new Date(y, mo-1).toLocaleString('fr-CA', { month:'long', year:'numeric' }).slice(0,31);
+    XLSX.utils.book_append_sheet(wb, creerFeuille(construireData(sous)), nom);
+  });
+
+  XLSX.writeFile(wb, `Presences_complet_${aujourdhui()}.xlsx`);
+  toast('📥 Export complet généré !');
+}
+
+// ── Utilitaires ──────────────────────────────────────────────────────────
+function dureeMin(a, d) {
+  if (!a || !d) return 0;
+  const [ah, am] = a.split(':').map(Number);
+  const [dh, dm] = d.split(':').map(Number);
+  const diff = (dh*60+dm) - (ah*60+am);
+  return diff > 0 ? diff : 0;
+}
+function formatDuree(min) {
+  if (!min) return '—';
+  const h = Math.floor(min/60), m = min%60;
+  return h > 0 ? `${h}h${String(m).padStart(2,'0')}` : `${m}min`;
+}
+function formatDate(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+function semaineISO(d) {
+  d = new Date(d); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - (d.getDay()+6)%7);
+  const wn = Math.floor((d - new Date(d.getFullYear(),0,4)) / 604800000) + 1;
+  return `${d.getFullYear()}-W${String(wn).padStart(2,'0')}`;
+}
+function aujourdhui() { return new Date().toISOString().split('T')[0]; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── Démarrage ────────────────────────────────────────────────────────────
+charger();
+setInterval(charger, 30000); // rafraîchir toutes les 30 secondes
+document.getElementById('filtreDate').value = aujourdhui();
+</script>
+</body>
+</html>

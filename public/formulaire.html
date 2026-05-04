@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enregistrer ma présence — TELECON</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f4ff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1a56db;
+      letter-spacing: .5px;
+    }
+    .logo p { font-size: .9rem; color: #6b7280; margin-top: 4px; }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.1);
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .form-group { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+    .required::after { content: ' *'; color: #ef4444; }
+
+    input, select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 1rem;
+      color: #111827;
+      background: #f9fafb;
+      transition: border .2s, box-shadow .2s;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #1a56db;
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+      background: #fff;
+    }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .btn-submit {
+      width: 100%;
+      padding: 15px;
+      background: #1a56db;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background .18s, transform .1s;
+      letter-spacing: .3px;
+    }
+    .btn-submit:hover  { background: #1042a8; }
+    .btn-submit:active { transform: scale(.98); }
+    .btn-submit:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* ── Écran de succès ── */
+    #succes {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    .icone-succes {
+      width: 70px;
+      height: 70px;
+      background: #d1fae5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    #succes h2 { font-size: 1.3rem; color: #065f46; margin-bottom: 8px; }
+    #succes p  { font-size: .95rem; color: #6b7280; line-height: 1.5; }
+    .btn-nouveau {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 11px 24px;
+      background: #f3f4f6;
+      color: #374151;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-nouveau:hover { background: #e5e7eb; }
+
+    /* ── Erreur ── */
+    .msg-erreur {
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #b91c1c;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: .88rem;
+      margin-bottom: 16px;
+      display: none;
+    }
+
+    .note { font-size: .78rem; color: #9ca3af; margin-top: 16px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="logo">
+    <h1>TELECON</h1>
+    <p>Enregistrement des présences</p>
+  </div>
+
+  <div class="card">
+
+    <!-- Formulaire -->
+    <div id="formulaire">
+      <div class="msg-erreur" id="msgErreur"></div>
+
+      <div class="form-group">
+        <label class="required" for="employe">Votre nom complet</label>
+        <input type="text" id="employe" placeholder="Ex. : Marie Tremblay" autocomplete="name" />
+      </div>
+
+      <div class="form-group">
+        <label class="required" for="date">Date</label>
+        <input type="date" id="date" />
+      </div>
+
+      <div class="row2">
+        <div class="form-group">
+          <label class="required" for="arrivee">Arrivée</label>
+          <input type="time" id="arrivee" />
+        </div>
+        <div class="form-group">
+          <label for="depart">Départ</label>
+          <input type="time" id="depart" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="projet">Projet / Équipe</label>
+        <input type="text" id="projet" placeholder="Optionnel" />
+      </div>
+
+      <button class="btn-submit" id="btnSoumettre" onclick="soumettre()">
+        Enregistrer ma présence
+      </button>
+      <p class="note">* Champs obligatoires</p>
+    </div>
+
+    <!-- Confirmation -->
+    <div id="succes">
+      <div class="icone-succes">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#057a55" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2>Présence enregistrée !</h2>
+      <p>Votre présence a été transmise avec succès.<br>Vous pouvez fermer cette page.</p>
+      <button class="btn-nouveau" onclick="remplirNouvel()">Enregistrer une autre entrée</button>
+    </div>
+
+  </div>
+
+  <script>
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    async function soumettre() {
+      const employe = document.getElementById('employe').value.trim();
+      const date    = document.getElementById('date').value;
+      const arrivee = document.getElementById('arrivee').value;
+      const depart  = document.getElementById('depart').value;
+      const projet  = document.getElementById('projet').value.trim();
+      const errEl   = document.getElementById('msgErreur');
+
+      errEl.style.display = 'none';
+
+      if (!employe) { afficherErreur('Veuillez entrer votre nom complet.'); return; }
+      if (!date)    { afficherErreur('Veuillez sélectionner une date.');    return; }
+      if (!arrivee) { afficherErreur('Veuillez entrer votre heure d\'arrivée.'); return; }
+
+      const btn = document.getElementById('btnSoumettre');
+      btn.disabled    = true;
+      btn.textContent = 'Envoi en cours…';
+
+      try {
+        const rep = await fetch('/api/presence', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ employe, date, arrivee, depart, projet })
+        });
+        const data = await rep.json();
+        if (!rep.ok) throw new Error(data.erreur || 'Erreur serveur');
+
+        document.getElementById('formulaire').style.display = 'none';
+        document.getElementById('succes').style.display    = 'block';
+      } catch (e) {
+        afficherErreur('Une erreur est survenue. Veuillez réessayer.');
+        btn.disabled    = false;
+        btn.textContent = 'Enregistrer ma présence';
+      }
+    }
+
+    function afficherErreur(msg) {
+      const el = document.getElementById('msgErreur');
+      el.textContent    = msg;
+      el.style.display  = 'block';
+    }
+
+    function remplirNouvel() {
+      document.getElementById('arrivee').value = '';
+      document.getElementById('depart').value  = '';
+      document.getElementById('formulaire').style.display = '';
+      document.getElementById('succes').style.display     = 'none';
+      document.getElementById('btnSoumettre').disabled    = false;
+      document.getElementById('btnSoumettre').textContent = 'Enregistrer ma présence';
+      document.getElementById('msgErreur').style.display  = 'none';
+    }
+  </script>
+</body>
+</html>
