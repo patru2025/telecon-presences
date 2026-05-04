@@ -87,4 +87,7 @@ app.delete('/api/presence/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-app.listen(PORT, () => console.log('Serveur TELECON démarré sur le port', PORT));
+app.listen(PORT, () => {
+  console.log('Serveur TELECON démarré sur le port', PORT);
+  console.log('Dossiers disponibles:', fs.readdirSync(__dirname));
+});
