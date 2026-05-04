@@ -15,7 +15,7 @@ if (!fs.existsSync(FICHIER_DATA)) fs.writeFileSync(FICHIER_DATA, '[]');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'Public')));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'telecon-secret-2024',
   resave: false,
@@ -33,7 +33,7 @@ function sauver(data) {
 }
 
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Public', 'formulaire.html'));
+  res.sendFile(path.join(__dirname, 'public', 'formulaire.html'));
 });
 
 app.post('/api/presence', (req, res) => {
@@ -56,9 +56,9 @@ app.post('/api/presence', (req, res) => {
 
 app.get('/admin', (req, res) => {
   if (req.session.admin) {
-    res.sendFile(path.join(__dirname, 'Opinions', 'admin.html'));
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
   } else {
-    res.sendFile(path.join(__dirname, 'Opinions', 'login.html'));
+    res.sendFile(path.join(__dirname, 'views', 'login.html'));
   }
 });
 
@@ -89,5 +89,5 @@ app.delete('/api/presence/:id', (req, res) => {
 
 app.listen(PORT, () => {
   console.log('Serveur TELECON démarré sur le port', PORT);
-  console.log('Dossiers disponibles:', fs.readdirSync(__dirname));
+  console.log('Dossiers:', fs.readdirSync(__dirname));
 });
