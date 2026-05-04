@@ -15,7 +15,7 @@ if (!fs.existsSync(FICHIER_DATA)) fs.writeFileSync(FICHIER_DATA, '[]');
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static('Public'));
+app.use(express.static(path.join(__dirname, 'Public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'telecon-secret-2024',
   resave: false,
